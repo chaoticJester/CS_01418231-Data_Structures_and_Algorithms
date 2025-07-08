@@ -1,48 +1,12 @@
 #include <iostream>
-#include <sstream>
-#include <cctype>
+#include <string>
 #include <cmath>
 using namespace std;
 
-
-//สร้าง struct ชื่อ Spell ใช้เก็บข้อมูลเวทคาถา
-struct Spell {
-    int cost;
-    int score;
-    double modifier;
-};
-
-//ใช้ตรวจว่า string ที่รับเข้ามาเป็นตัวเลขทุกตัวไหม
-bool isNumber(string s) {
-    if(s.empty()) {
-        return false;
-    }
-    for(char c : s) {
-        if(!isdigit(c)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-//ฟังค์ชั่น recursive หาคะแนนที่มากที่สุดด้วย algo จากโจทย์ knapsack
-double pathToVictory(int i, Spell array[], int spell_limit, int mana_limit, int spell_known) {
-    if (i == spell_known || spell_limit == 0 || mana_limit == 0) {
-        return 0;
-    }
-
-    double cast = 0;
-    if (spell_limit > 0 && array[i].cost <= mana_limit) {
-        cast = (array[i].score * array[i].modifier) + pathToVictory(i, array, spell_limit - 1, mana_limit - array[i].cost, spell_known);
-    }
-
-    double dontCast = pathToVictory(i + 1, array, spell_limit, mana_limit, spell_known);
-    
-    return max(cast, dontCast);
-}
-
-double calMaxScore(Spell array[], int spell_limit, int mana_limit, int spell_known) {
-    return (pathToVictory(0, array, spell_limit, mana_limit, spell_known));
+//ฟังค์ชั่นหาคะแนนที่มากที่สุดที่เป็นไปได้
+float calMaxScore(int cost[], float points[], int spell_limit, int mana_limit, int spell_known) {
+    //ยังไม่ได้เชียน
+    return 0;
 }
 
 
@@ -58,70 +22,49 @@ int main() {
     cin.ignore();
 
     //สร้าง Array ของ Spell
-    Spell spells[spell_known];
+    int spells_cost[spell_known];
+    float spells_point[spell_known];
     string line;
     
     //ลูปรับคาถาที่มิเอนะใช้ได้
     for(int i = 0; i < spell_known; i++) {
         
         getline(cin, line);
-        istringstream iss(line);
-        Spell s;
-        string word;
-        char type;
-        int level;
-        
-        iss >> type >> level;
-        
-        while(iss >> word) {
-            if(isNumber(word)) {
-                s.cost = stoi(word);
-                break;
-            }
-        }
+
+        char type = line[0];
+        char dmp = line[2];
+        int level = dmp - '0';
+        int last_space = line.rfind(' ');
+        spells_cost[i] = stoi(line.substr(last_space + 1));
+
+        int score;
+        float modifier;
 
         if(type == 'F' || type == 'W') {
-            s.score = 12;
+            score = 12;
         } else if(type == 'A') {
-            s.score = 15;
+            score = 15;
         } else if(type == 'E') {
-            s.score = 10;
+            score = 10;
         } else if(type == 'L' || type == 'D') {
-            s.score = 20;
+            score = 20;
         } 
 
-        if(level == 1) {
-            s.modifier = 0.1;
-        } else if(level == 2) {
-            s.modifier = 0.2;
-        } else if(level == 3) {
-            s.modifier = 0.3;
-        } else if(level == 4) {
-            s.modifier = 0.4;
-        } else if(level == 5) {
-            s.modifier = 0.5;
-        } else if(level == 6) {
-            s.modifier = 0.65;
-        } else if(level == 7) {
-            s.modifier = 0.8;
+        if(level >= 1 && level <= 5) {
+            modifier = 0.1 * level;
+        } else if(level == 6 || level == 7) {
+            modifier = 0.5 + (0.15 * (level - 5));
         } else {
-            s.modifier = 1.0;
+            modifier = 1.0;
         }
-
-        spells[i] = s;
+        
+        spells_point[i] = score * modifier;
     }
 
-    // Input Test
-    // cout << "Spell Limit: " << spell_limit << endl;
-    // cout << "Miena's mana: " << miena_mana << endl;
-    // cout << "Miena's spell known: " << spell_known << endl;
-    
-    // for(int i = 0; i < spell_known; i++) {
-    //     printf("%d %d %d\n", spells[i].cost, spells[i].score, spells[i].modifier);;
-    // }
-    cout << calMaxScore(spells, spell_limit, miena_mana, spell_known) << endl;
+    cout << floor(calMaxScore(spells_cost, spells_point, spell_limit, miena_mana, spell_known)) << endl;
     return 0; 
 }
+
 
 
 
