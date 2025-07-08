@@ -1,12 +1,28 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <vector>
 using namespace std;
 
-//ฟังค์ชั่นหาคะแนนที่มากที่สุดที่เป็นไปได้
-float calMaxScore(int cost[], float points[], int spell_limit, int mana_limit, int spell_known) {
-    //ยังไม่ได้เชียน
-    return 0;
+//ใช้คำนวนคะแนนสูงสุดที่เป็นไปได้ ด้วย algo จากโจทย์ unbound knapsack
+float pathToVictory(int i, vector<int> cost, vector<float> point, int spell_limit, int mana_limit, int spell_known) {
+    if (i == spell_known || spell_limit == 0 || mana_limit == 0) {
+        return 0;
+    }
+    
+    float cast = 0;
+    if (cost[i] <= mana_limit) {
+        cast = fabs(point[i] + pathToVictory(i, cost, point, spell_limit - 1, mana_limit - cost[i], spell_known));
+    }
+
+    float dontCast = pathToVictory(i + 1, cost, point, spell_limit, mana_limit, spell_known);
+    
+    return max(cast, dontCast);
+}
+
+//ใช้เรียกฟังค์ชั่น pathToVictory
+float calMaxScore(vector<int> cost, vector<float> point, int spell_limit, int mana_limit, int spell_known) {
+    return pathToVictory(0, cost, point, spell_limit, mana_limit, spell_known);
 }
 
 
@@ -22,23 +38,23 @@ int main() {
     cin.ignore();
 
     //สร้าง Array ของ Spell
-    int spells_cost[spell_known];
-    float spells_point[spell_known];
+    vector<int> spells_cost(spell_known);
+    vector<float> spells_point(spell_known);
     string line;
     
     //ลูปรับคาถาที่มิเอนะใช้ได้
     for(int i = 0; i < spell_known; i++) {
-        
-        getline(cin, line);
 
-        char type = line[0];
-        char dmp = line[2];
-        int level = dmp - '0';
+        char type;
+        int level;
+        cin >> type >> level;
+        cin.ignore();
+        getline(cin, line);
         int last_space = line.rfind(' ');
         spells_cost[i] = stoi(line.substr(last_space + 1));
 
-        int score;
-        float modifier;
+        int score = 0;
+        float modifier = 0.0;
 
         if(type == 'F' || type == 'W') {
             score = 12;
@@ -51,15 +67,16 @@ int main() {
         } 
 
         if(level >= 1 && level <= 5) {
-            modifier = 0.1 * level;
+            modifier = fabs(0.1 * level);
         } else if(level == 6 || level == 7) {
-            modifier = 0.5 + (0.15 * (level - 5));
+            modifier = fabs(0.5 + (0.15 * (level - 5)));
         } else {
             modifier = 1.0;
         }
         
-        spells_point[i] = score * modifier;
+        spells_point[i] = fabs(score * modifier);
     }
+
 
     cout << floor(calMaxScore(spells_cost, spells_point, spell_limit, miena_mana, spell_known)) << endl;
     return 0; 
