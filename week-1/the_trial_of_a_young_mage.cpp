@@ -5,24 +5,22 @@
 using namespace std;
 
 //ใช้คำนวนคะแนนสูงสุดที่เป็นไปได้ ด้วย algo จากโจทย์ unbound knapsack
-float pathToVictory(int i, vector<int> cost, vector<float> point, int spell_limit, int mana_limit, int spell_known) {
-    if (i == spell_known || spell_limit == 0 || mana_limit == 0) {
+float pathToVictory(int i, vector<int> &cost, vector<int> &score, vector<int> &mod, int spell_limit, int mana_limit, int spell_known) {
+    float cast = 0.0;
+    if (i == spell_known || spell_limit == 0) {
         return 0;
+    } else if (cost[i] <= mana_limit) {
+        cast = (score[i] * mod[i] / 100.0) + pathToVictory(i, cost, score, mod, spell_limit - 1, mana_limit - cost[i], spell_known);
     }
-    
-    float cast = 0;
-    if (cost[i] <= mana_limit) {
-        cast = fabs(point[i] + pathToVictory(i, cost, point, spell_limit - 1, mana_limit - cost[i], spell_known));
-    }
+    float dontCast = pathToVictory(i + 1, cost, score, mod, spell_limit, mana_limit, spell_known);
 
-    float dontCast = pathToVictory(i + 1, cost, point, spell_limit, mana_limit, spell_known);
-    
+    // ผลลัพธ์ที่ดีที่สุด
     return max(cast, dontCast);
 }
 
 //ใช้เรียกฟังค์ชั่น pathToVictory
-float calMaxScore(vector<int> cost, vector<float> point, int spell_limit, int mana_limit, int spell_known) {
-    return pathToVictory(0, cost, point, spell_limit, mana_limit, spell_known);
+float calMaxScore(vector<int> &cost, vector<int> &score, vector<int> &mod, int spell_limit, int mana_limit, int spell_known) {
+    return pathToVictory(0, cost, score, mod, spell_limit, mana_limit, spell_known);
 }
 
 
@@ -35,11 +33,11 @@ int main() {
 
     cin >> spell_limit >> miena_mana;
     cin >> spell_known;
-    cin.ignore();
 
     //สร้าง Array ของ Spell
     vector<int> spells_cost(spell_known);
-    vector<float> spells_point(spell_known);
+    vector<int> spells_score(spell_known);
+    vector<int> spells_mod(spell_known);
     string line;
     
     //ลูปรับคาถาที่มิเอนะใช้ได้
@@ -53,32 +51,28 @@ int main() {
         int last_space = line.rfind(' ');
         spells_cost[i] = stoi(line.substr(last_space + 1));
 
-        int score = 0;
-        float modifier = 0.0;
 
         if(type == 'F' || type == 'W') {
-            score = 12;
+            spells_score[i] = 12;
         } else if(type == 'A') {
-            score = 15;
+            spells_score[i] = 15;
         } else if(type == 'E') {
-            score = 10;
+            spells_score[i] = 10;
         } else if(type == 'L' || type == 'D') {
-            score = 20;
+            spells_score[i] = 20;
         } 
 
         if(level >= 1 && level <= 5) {
-            modifier = fabs(0.1 * level);
+            spells_mod[i] = 10 * level;
         } else if(level == 6 || level == 7) {
-            modifier = fabs(0.5 + (0.15 * (level - 5)));
-        } else {
-            modifier = 1.0;
+            spells_mod[i] = 50 + (15 * (level - 5));
+        } else if(level == 8) {
+            spells_mod[i] = 100;
         }
-        
-        spells_point[i] = fabs(score * modifier);
     }
 
 
-    cout << floor(calMaxScore(spells_cost, spells_point, spell_limit, miena_mana, spell_known)) << endl;
+    cout << calMaxScore(spells_cost, spells_score, spells_mod, spell_limit, miena_mana, spell_known) << endl;
     return 0; 
 }
 
