@@ -5,90 +5,99 @@ struct Spell {
     Spell *next;
 };
 
-bool isInLinkedList(short value, Spell *head) {
-    while (head != nullptr) {
-        if (head->value == value) {
-            return true;
+
+// สร้าง Linked List โดยเอา node ใหม่ มาต่อหลัง head
+void createLinkedList(Spell **head, int value) {
+    Spell *newSpell = new Spell;
+    newSpell->value = value;
+    newSpell->next = *head;
+    *head = newSpell;
+}
+
+// เช็คว่ามีค่า value ใน Linked List หลักหรือยัง
+Spell *isInLinkedList(Spell *mainHead, int value) {
+    while(mainHead != nullptr) {
+        if(mainHead->value == value) {
+            return mainHead;
         }
-        head = head->next;
-    }
-    return false;
-}
-
-void createLinkedList(Spell **tmpHead, short value) {
-    Spell *newSpell = new Spell{value, *tmpHead};
-    *tmpHead = newSpell;
-}
-
-Spell *findNode(short value, Spell *head) {
-    while (head != nullptr) {
-        if (head->value == value) return head;
-        head = head->next;
+        mainHead = mainHead->next;
     }
     return nullptr;
 }
 
-void insertNode(Spell *head, Spell *tmpHead) {
-    Spell *insertPoint = findNode(tmpHead->value, head);
-    if (!insertPoint) return;
+//แทรก node ของ Linked List รอง ที่ value ไม่มีใน Linked List หลัก
+//ใน Linked List หลัก 
+void insertNode(Spell *mainHead, Spell *tmpHead) {
+    Spell *insertPosition = isInLinkedList(mainHead, tmpHead->value);
+    Spell *tmpCurrentHead = tmpHead;
+    tmpHead = tmpHead->next;
+    delete tmpCurrentHead;
 
-    Spell *current = tmpHead->next;
-    Spell *tail = insertPoint;
-    while (current != nullptr) {
-        if (!isInLinkedList(current->value, head)) {
-            Spell *newNode = new Spell{current->value, tail->next};
-            tail->next = newNode;
-            tail = newNode;
+    while(tmpHead != nullptr) {
+        Spell *next = tmpHead->next;
+        if(!isInLinkedList(mainHead, tmpHead->value)) {
+            Spell *newNode = new Spell{tmpHead->value, insertPosition->next};
+            insertPosition->next = newNode;
+            insertPosition = newNode;
         }
-        current = current->next;
+        delete tmpHead;
+        tmpHead = next;
     }
 }
 
-void freeLinkedList(Spell *head) {
-    while (head != nullptr) {
-        Spell *next = head->next;
-        delete head;
-        head = next;
+//cout ค่าของแต่ละ node ใน Linked List หลัก
+//แล้วลบ node นั่นๆทิ้งไปด้วย
+void printLinkedList(Spell **head) {
+    Spell *current = *head;
+    while(current != nullptr) {
+        std::cout << current->value << " ";
+        Spell *next = current->next;
+        delete current;
+        current = next;
     }
+    *head = nullptr;
 }
 
-void inputSpell(Spell **head, short round) {
-    short tmp;
-    Spell *tmpHead = nullptr;
-    while (std::cin >> tmp && tmp != 0) {
-        if (!isInLinkedList(tmp, tmpHead)) {
-            createLinkedList(&tmpHead, tmp);
-        }
-    }
-
-    if (tmpHead != nullptr && round == 0) {
-        *head = tmpHead;
-    } else if (tmpHead != nullptr && *head != nullptr) {
-        if (isInLinkedList(tmpHead->value, *head)) {
-            insertNode(*head, tmpHead);
-        }
-        freeLinkedList(tmpHead); 
-    }
-}
-
-void printLinkedList(Spell *head) {
-    while (head != nullptr) {
-        std::cout << head->value << " ";
-        head = head->next;
-    }
-}
 
 int main() {
     short n;
     std::cin >> n;
 
-    Spell *head = nullptr;
+    Spell *mainHead = nullptr;
 
+    //รับ input
     for (short i = 0; i < n; i++) {
-        inputSpell(&head, i);
+        Spell *tmpHead = nullptr;
+        int value;
+        while(true) {
+            std::cin >> value;
+            //ถ้า value == 0 == หมดชุดเลข ก็ break
+            if(value == 0) {
+                break;
+            }
+            createLinkedList(&tmpHead, value);
+        }
+        if(i == 0) {
+            //ถ้าเป็นรอบแรก
+            mainHead = tmpHead;
+        } else if (tmpHead != nullptr) {
+            if (isInLinkedList(mainHead, tmpHead->value)) {
+                // ถ้า value แรกของ Linked List รอง มีใน Linked List หลัก
+                //แทรกทุก node ของ Linked List รอง ที่ value ไม่มีใน Linked List หลัก
+                insertNode(mainHead, tmpHead);
+            } else {
+                // ถ้า value แรกไม่มี ลบทั้ง Linked List ทิ้ง
+                while (tmpHead != nullptr) {
+                    Spell* next = tmpHead->next;
+                    delete tmpHead;
+                    tmpHead = next;
+                }
+            }
+        }
     }
 
-    printLinkedList(head);
-    freeLinkedList(head); 
+    //แสดง value ของ node ใน Linked List หลัก
+    printLinkedList(&mainHead);
+
     return 0;
 }
