@@ -147,6 +147,23 @@ void seperateinput(std::queue<std::string> &postfix, const std::string& input) {
     }
 }
 
+bool isTokenValid(std::string token) {
+    bool foundDot = false;
+    for(int i = 0; i < token.length(); i++) {
+        if(token[i] == '.') {
+            if(foundDot) {
+                return false;
+            } else {
+                foundDot = true;
+            }
+        } else if(isOperator(token[i]) && i < token.length() - 1 && token[i] == token[i+1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 //คำนวนผลลัพธ์
 bool calculateAnswer(std::queue<std::string> postfix, double &result) {
     std::stack<double> operands;
@@ -156,7 +173,11 @@ bool calculateAnswer(std::queue<std::string> postfix, double &result) {
         postfix.pop();
 
         if (isdigit(token[0]) || (token[0] == '-' && token.size() > 1)) {
+            if(isTokenValid(token)) {
                 operands.push(std::stod(token));
+            } else {
+                return false;
+            }
         } else if (isOperator(token[0])) {
             if (operands.size() < 2) {
                 return false;
