@@ -13,7 +13,7 @@ int countAscii(string bookName) {
     return sumAscii;
 }
 
-void sortShelf(vector<string> &shelf) {
+void sortBook(vector<string> &shelf) {
     int n = shelf.size();
     for(int i = 0; i < n; i++) {
         for(int j = 0; j < n - i - 1; j++) {
@@ -25,6 +25,7 @@ void sortShelf(vector<string> &shelf) {
         }
     }
 }
+
 
 bool isValid(string name) {
     if(name.empty()) {
@@ -45,16 +46,17 @@ bool isValid(string name) {
 int main() {
     int width;
     cin >> width;
+    cin.ignore();
     if(width < 256) {
         map<char, vector<vector<string>>> shelves;
         
         string bookName;
         bool isError = false;
-        while(cin >> bookName) {
+        while(getline(cin, bookName)) {
             if(bookName.length() > 30 || !isValid(bookName)) {
                 isError = true;
-                break;
-            }
+                return 0;
+            }   
             char shelfName = bookName[0];
             int hashIndex = countAscii(bookName) % width;
 
@@ -81,9 +83,12 @@ int main() {
                             continue;
                         }
 
-                        sortShelf(bookList[i]);
+                        sortBook(bookList[i]);
                         for(int j = 0; j < bookList[i].size(); j++) {
-                            cout << bookList[i][j] << " ";
+                            cout << bookList[i][j];
+                            if(j < bookList[i].size() - 1) {
+                                cout << " ";
+                            }
                         }
                         printf("\n");
 
