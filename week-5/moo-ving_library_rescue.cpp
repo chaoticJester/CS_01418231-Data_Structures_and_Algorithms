@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <cctype>
+#include <string>
 using namespace std;
 
 int countAscii(string bookName) {
@@ -26,7 +27,7 @@ void sortBook(vector<string> &shelf) {
 }
 
 bool isValid(string bookName) {
-    if(bookName.empty() || bookName.length() > 30 || !isValid(bookName) || !isalpha(bookName[0])) {
+    if(bookName.empty() || bookName.length() > 30 || !isalpha(bookName[0])) {
         return false;
     }
     for(char c : bookName) {
@@ -52,9 +53,9 @@ void printShelves(map<char, vector<vector<string>>> &shelves) {
             }
 
             for(int j = 0; j < bookList[i].size(); j++) {
-                cout << bookList[i][j];
+                printf("%s", bookList[i][j].c_str());
                 if(j < bookList[i].size() - 1) {
-                    cout << " ";
+                    printf(" ");
                 }
             }
             printf("\n");
@@ -65,18 +66,17 @@ void printShelves(map<char, vector<vector<string>>> &shelves) {
 
 int main() {
     int width;
-    cin >> width;
+    scanf("%d", &width);
+    getchar();
     
     if(width >= 1 && width <= 255) {
-        cin.ignore();
         map<char, vector<vector<string>>> shelves;
         
         string bookName;
-        while(getline(cin, bookName)) {
-            if(isValid(bookName)) {
-                return 0;
-            }   
-
+        while(getline(cin, bookName)) { // leading space skips leftover \n
+            if (!isValid(bookName)) {
+                exit(0);
+            }
             char shelfName = toupper(bookName[0]);
             int hashIndex = countAscii(bookName) % width;
 
