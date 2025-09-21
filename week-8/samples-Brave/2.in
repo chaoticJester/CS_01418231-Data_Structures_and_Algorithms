@@ -1,0 +1,8 @@
+DragonVault NULL
+GoldCoins DragonVault
+Jewels DragonVault
+GemPouch Jewels
+DiamondRing Jewels
+EmeraldRing Jewels
+M DiamondRing GoldCoins
+M GemPouch GoldCoins

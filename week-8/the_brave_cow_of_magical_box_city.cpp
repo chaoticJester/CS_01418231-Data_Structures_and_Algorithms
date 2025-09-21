@@ -1,198 +1,161 @@
 #include <iostream>
+#include <sstream>
+#include <cstring>
+#include <unordered_map>
+#include <vector>
+
 using namespace std;
 
-typedef struct Node {
-    string name;
-    Node* parent;
-    Node* leftChild;
-    Node* rightSibling;
-} Node;
+struct Node {
+    char* name;
+    Node* parent = nullptr;
+    vector<Node*> children;
+};
 
-Node* findNode(Node* root, string parent) {
-    if(root == nullptr) {
-        return nullptr;
-    } 
-    if(root->name == parent) {
-        return root;
+unordered_map<string, Node*> existedItem;
+
+bool isDescendant(Node* ancestor, Node* descendant) {
+    while (descendant) {
+        if (descendant == ancestor) {
+            return true;
+        }
+        descendant = descendant->parent;
     }
-    Node* found = findNode(root->leftChild, parent);
-
-    if (found != nullptr) {
-        return found;
-    }
-
-    return findNode(root->rightSibling, parent);
+    return false;
 }
 
-void createNode(Node** root, string item, Node* parent) {
-    Node* newItem = new Node;
-    newItem->name = item;
-    newItem->parent = parent;
-    newItem->leftChild = nullptr;
-    newItem->rightSibling = nullptr;
-
-    if(*root == nullptr) {
-        *root = newItem;
-        return;
+Node* findChild(Node* parent, Node* child) {
+    if (!parent) return nullptr;
+    for (Node* c : parent->children) {
+        if (c == child) return c;
     }
-    if(parent != nullptr) {
-        if(parent->leftChild != nullptr) {
-            Node* child = parent->leftChild;
-            while(child->rightSibling != nullptr) {
-                child = child->rightSibling;
-            }
-            child->rightSibling = newItem;
-        } else {
-            parent->leftChild = newItem;
+    return nullptr;
+}
+
+void removeChild(Node* parent, Node* child) {
+    if (!parent) return;
+    for (auto it = parent->children.begin(); it != parent->children.end(); ++it) {
+        if (*it == child) {
+            parent->children.erase(it);
+            return;
         }
     }
-    
-}
-
-bool isDescendant(Node* parent, Node* child) {
-    if (child == nullptr) return false;
-    if (child->parent == parent) return true;
-    return isDescendant(parent, child->parent);
 }
 
 void moveNode(Node** root, Node* child, Node* newParent) {
-    if (child == nullptr || *root == nullptr) return;
+    if (!child || child == newParent || isDescendant(child, newParent)) return;
 
     Node* oldParent = child->parent;
-    if(oldParent != nullptr) {
-        if(oldParent->leftChild == child) {
-            oldParent->leftChild = child->rightSibling;
-        } else {
-            Node* sibling = oldParent->leftChild;
-            while (sibling && sibling->rightSibling != child) {
-                sibling = sibling->rightSibling;
-            }
-            if (sibling) {
-                sibling->rightSibling = child->rightSibling;
-            }
+    if (oldParent) {
+        removeChild(oldParent, child);
+    } else {
+        if (child == *root) {
+            *root = nullptr;
         }
     }
 
-    child->rightSibling = nullptr;  
-    child->parent = newParent;  
-
-    if(newParent != nullptr) {
-        if(newParent->leftChild == nullptr) {
-            newParent->leftChild = child;
-        } else {
-            Node* sibling = newParent->leftChild;
-            while (sibling->rightSibling != nullptr) {
-                sibling = sibling->rightSibling;
-            }
-            sibling->rightSibling = child;
-        }
+    if (newParent) {
+        newParent->children.push_back(child);
+        child->parent = newParent;
     } else {
-        if (*root != child) {
-            Node* oldRoot = *root;
-            if (!child->leftChild)
-                child->leftChild = oldRoot;
-            else {
-                Node* last = child->leftChild;
-                while (last->rightSibling) last = last->rightSibling;
-                last->rightSibling = oldRoot;
-            }
-            oldRoot->parent = child;
+        if (*root == nullptr) {
             *root = child;
+            child->parent = nullptr;
+        } else {
+            (*root)->parent = child;
+            child->children.push_back(*root);
+            *root = child;
+            child->parent = nullptr;
         }
     }
 }
 
-void removeNode(Node** root, Node* target) {
-    if (target == nullptr || *root == nullptr) return;
-
-    Node* child = target->leftChild;
-    while (child) {
-        Node* next = child->rightSibling;
-        removeNode(root, child);
-        child = next;
+void removeNodeAndDescendants(Node* target) {
+    if (!target) return;
+    for (Node* child : target->children) {
+        removeNodeAndDescendants(child);
     }
-
-    Node* parent = target->parent;
-    if (parent) {
-        if (parent->leftChild == target) {
-            parent->leftChild = target->rightSibling;
-        } else {
-            Node* sibling = parent->leftChild;
-            while (sibling && sibling->rightSibling != target)
-                sibling = sibling->rightSibling;
-            if (sibling) sibling->rightSibling = target->rightSibling;
-        }
-    }
-
-    if (*root == target) {
-        *root = nullptr;
-    }
-
+    existedItem.erase(target->name); 
+    delete[] target->name;
     delete target;
 }
 
-void printTree(Node* root, string indent = "", bool isLast = true) {
-    if (!root) return;
+void printTree(Node* node, int depth = 0) {
+    if (!node) return;
 
-    cout << indent;
-    if (!root->parent) {
-        cout << root->name << endl;
-    } else {
-        cout << "|_" << root->name << endl;
+    if (depth > 0) {
+        for (int i = 0; i < depth * 2 - 2; ++i) cout << " ";
+        cout << "|_";
     }
 
-    string childIndent = indent;
-    if (root->parent) {
-        childIndent += "  ";
-    }
+    cout << node->name << "\n";
 
-    Node* child = root->leftChild;
-    while (child) {
-        printTree(child, childIndent, child->rightSibling == nullptr);
-        child = child->rightSibling;
+    for (Node* child : node->children) {
+        printTree(child, depth + 1);
     }
 }
 
-
 int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
 
     Node* root = nullptr;
+    string commandline;
+    string command, item, parent;
 
-    string item, parent;
-    bool noError = true;
-    while(cin >> item >> parent) {
-        if(!item.empty() && !parent.empty()) {
-            if(item == "M") {
-                item = parent;
-                cin >> parent;
-                Node* i = findNode(root, item);
-                Node* p = findNode(root, parent);
-                if(i && !isDescendant(i, p)) {
+    while (getline(cin, commandline)) {
+        stringstream ss(commandline);
+        ss >> command;
+
+        if (command == "M") {
+            ss >> item >> parent;
+            Node* i = existedItem.count(item) ? existedItem[item] : nullptr;
+            Node* p = existedItem.count(parent) ? existedItem[parent] : nullptr;
+
+            if (i && item != parent) {
+                if (parent == "NULL") {
+                    moveNode(&root, i, nullptr);
+                } else if (p && !isDescendant(i, p)) {
                     moveNode(&root, i, p);
                 }
-            } else if(item == "R") {
-                Node* target = findNode(root, parent);
-                if(root == target) {
-                    noError = false;
-                }
-                removeNode(&root, target);
-            } else {
-                Node* i = findNode(root, item);
-                Node* p = findNode(root, parent);
-                if(!i && (parent == "NULL" || p != nullptr)) {
-                    createNode(&root, item, p);
-                } else {
-                    noError = false;
-                    break;
+            }
+        } else if (command == "R") {
+            ss >> item;
+            Node* i = existedItem.count(item) ? existedItem[item] : nullptr;
+            if (i) {
+                if (i->parent) removeChild(i->parent, i);
+                else if (i == root) root = nullptr;
+                removeNodeAndDescendants(i);
+            }
+        } else if (!command.empty()) {
+            item = command;
+            ss >> parent;
+            if (!existedItem.count(item)) {
+                Node* newNode = new Node;
+                newNode->name = new char[item.size() + 1];
+                strcpy(newNode->name, item.c_str());
+
+                if (parent == "NULL") {
+                    if (root == nullptr) {
+                        root = newNode;
+                        existedItem[item] = newNode;
+                    } else {
+                        existedItem[item] = newNode;
+                        moveNode(&root, newNode, nullptr);
+                    }
+                } else if (existedItem.count(parent)) {
+                    Node* p = existedItem[parent];
+                    newNode->parent = p;
+                    p->children.push_back(newNode);
+                    existedItem[item] = newNode;
                 }
             }
         } else {
-            noError = false;        
-        }   
+            break;
+        }
     }
 
-
-    if(noError && root) {
+    if (root) {
         printTree(root);
     } else {
         cout << "IMPOSSIBLE\n";
