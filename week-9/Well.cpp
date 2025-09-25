@@ -1,8 +1,8 @@
 #include <iostream>
-#include <vector>
 #include <string>
 #include <cctype>
 #include <sstream>
+
 using namespace std;
 
 struct Name {
@@ -14,6 +14,8 @@ struct Name {
 struct Target {
     string value;
     Name* root;
+    Target* right;
+    Target* left; 
 };
 
 string toLowercase(string input) {
@@ -24,110 +26,139 @@ string toLowercase(string input) {
     return result;
 }
 
-bool isSameName(const string& a, const string& b) {
-    if (a.size() != b.size()) return false;
-    for (size_t i = 0; i < a.size(); i++) {
-        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i]))
-            return false;
-    }
-    return true;
+bool isSameName(string a, string b) {
+    return toLowercase(a) == toLowercase(b);
 }
 
-void createName(string name, vector<Target*>& mysticWell, bool isTarget) {
-    if (isTarget) {
-        Target* newT = new Target;
-        newT->value = name;
-        newT->root = nullptr;
-        mysticWell.insert(mysticWell.begin(), newT);
+
+void createTarget(string targetName, Target** mysticWell) {
+    Target* newTarget = new Target;
+    newTarget->value = toLowercase(targetName);
+    newTarget->root = nullptr;
+    newTarget->left = nullptr;
+    newTarget->right = nullptr;
+    
+    if(*mysticWell == nullptr) {
+        *mysticWell = newTarget;
         return;
     }
 
+    Target* c = *mysticWell;
+    Target* parent = nullptr;
+    
+    while(c != nullptr) {
+        if(isSameName(c->value, newTarget->value)) { 
+            delete newTarget; 
+            return; 
+        }
+        
+        parent = c;
+        if(newTarget->value > c->value) {
+            c = c->right;
+        } else {
+            c = c->left;
+        }
+    }
+    
+    if (newTarget->value > parent->value) {
+        parent->right = newTarget;
+    } else {
+        parent->left = newTarget;
+    }
+}
+
+void createName(string name, Target* mysticWell) {
     Name* newName = new Name;
     newName->value = name;
     newName->left = nullptr;
     newName->right = nullptr;
     
-    for (Target* target : mysticWell) {
-        if (isSameName(name, target->value)) {
-            if (target->root == nullptr) {
-                target->root = newName;
-                return;
+    
+    while(mysticWell != nullptr) {
+        if(isSameName(mysticWell->value, newName->value)) {
+            if(mysticWell->root == nullptr) {
+                mysticWell->root = newName;
+                return ;
             }
-            Name* current = target->root;
-            while (current != nullptr) {
-                if (name < current->value) {
-                    if (current->left == nullptr) {
-                        current->left = newName;
+            Name* currentName = mysticWell->root;
+            while (true) {
+                if (newName->value <= currentName->value) {
+                    if (currentName->left == nullptr) {
+                        currentName->left = newName;
                         return;
                     }
-                    current = current->left;
+                    currentName = currentName->left;
                 } else {
-                    if (current->right == nullptr) {
-                        current->right = newName;
+                    if (currentName->right == nullptr) {
+                        currentName->right = newName;
                         return;
                     }
-                    current = current->right;
+                    currentName = currentName->right;
                 }
             }
-            break;
+        }
+        if(mysticWell->value < toLowercase(newName->value)) {
+            mysticWell = mysticWell->right;
+        } else {
+            mysticWell = mysticWell->left;
         }
     }
 }
 
-void postOrderPrint(Name* name) {
+
+void inOrderPrint(Name* name) {
     if(name == nullptr) return;
 
-    postOrderPrint(name->left);
+    inOrderPrint(name->left);
     cout << name->value << " ";
-    postOrderPrint(name->right);
+    inOrderPrint(name->right);
+}
+
+
+void targetTraversal(Target* target) {
+    if(target == nullptr) return;
+    
+    targetTraversal(target->right);
+    if (target->root != nullptr) {
+        inOrderPrint(target->root);
+        cout << "\n";
+    } else {
+        cout << "\"" << target->value << "\"" << " is not found!\n";
+    }
+    targetTraversal(target->left);
 }
 
 int main() {
-    vector<Target*> mysticWell;
-    string target;
-    getline(cin, target);
+    Target* mysticWell = nullptr;
+    string targetLine;
+    getline(cin, targetLine);
 
-    if(!target.empty()) {
-        stringstream ss(target);
-        string token;
-        while (ss >> token) {
-            bool sameName = false;
-            for (Target* n : mysticWell) {
-                if (isSameName(token, n->value)) {
-                    sameName = true;
-                    break;
-                }
-            }
-            if (sameName) continue;
-    
-            createName(token, mysticWell, true);
-        }
+    if (targetLine.empty()) {
+        cout << "IMPOSSIBLE\n";
+        return 0;
     }
 
-    string input;
-    while(getline(cin, target)) {
-        if(target.empty()) continue;
-        stringstream ss(target);
-        ss >> input;
-        createName(input, mysticWell, false);
+    stringstream ss(targetLine);
+    string token;
+    while (ss >> token) {
+        createTarget(token, &mysticWell); 
     }
 
+    string nameInput;
+    while(getline(cin, nameInput)) { 
+        if(nameInput.empty()) continue;
+        createName(nameInput, mysticWell); 
+    }
 
-    if(mysticWell.empty()) {
+    Target* t = mysticWell;
+
+
+    if (mysticWell == nullptr) {
         cout << "IMPOSSIBLE\n";
     } else {
-        for (Target* target : mysticWell) {
-            if (target->root == nullptr) {
-                cout << "\"" << toLowercase(target->value) << "\" is not found!\n";
-            }
-        }
-        for(Target* target : mysticWell) {
-            if(target->root != nullptr) {
-                postOrderPrint(target->root);
-                cout << "\n";
-            }   
-        }
+        targetTraversal(mysticWell); 
     }
+
 
     return 0;
 }
