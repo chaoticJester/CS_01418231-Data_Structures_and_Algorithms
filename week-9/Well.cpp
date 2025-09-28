@@ -2,7 +2,6 @@
 #include <string>
 #include <cctype>
 #include <sstream>
-
 using namespace std;
 
 struct Name {
@@ -19,146 +18,132 @@ struct Target {
 };
 
 string toLowercase(string input) {
-    string result = input;
-    for (char& c : result) {
-        c = tolower((unsigned char)(c));  
+    for (size_t i = 0; i < input.size(); ++i) {
+        input[i] = (char)tolower((unsigned char)input[i]);
     }
-    return result;
+    return input;
 }
 
-bool isSameName(string a, string b) {
-    return toLowercase(a) == toLowercase(b);
-}
-
-
-void createTarget(string targetName, Target** mysticWell) {
+void createTarget(string target, Target** mysticWell) {
     Target* newTarget = new Target;
-    newTarget->value = toLowercase(targetName);
-    newTarget->root = nullptr;
-    newTarget->left = nullptr;
-    newTarget->right = nullptr;
-    
-    if(*mysticWell == nullptr) {
+    newTarget->value = toLowercase(target);
+    newTarget->root = NULL;
+    newTarget->left = NULL;
+    newTarget->right = NULL;
+
+    if(*mysticWell == NULL) {
         *mysticWell = newTarget;
         return;
     }
 
-    Target* c = *mysticWell;
-    Target* parent = nullptr;
-    
-    while(c != nullptr) {
-        if(isSameName(c->value, newTarget->value)) { 
-            delete newTarget; 
-            return; 
-        }
-        
-        parent = c;
-        if(newTarget->value > c->value) {
-            c = c->right;
+    Target* current = *mysticWell;
+    while(true) {
+        if(current->value == newTarget->value) {
+            delete newTarget;
+            return;
+        } else if(current->value < newTarget->value) {
+            if(current->right == NULL) {
+                current->right = newTarget;
+                return;
+            }
+            current = current->right;
         } else {
-            c = c->left;
+            if(current->left == NULL) {
+                current->left = newTarget;
+                return;
+            }
+            current = current->left;
         }
-    }
-    
-    if (newTarget->value > parent->value) {
-        parent->right = newTarget;
-    } else {
-        parent->left = newTarget;
     }
 }
 
 void createName(string name, Target* mysticWell) {
     Name* newName = new Name;
     newName->value = name;
-    newName->left = nullptr;
-    newName->right = nullptr;
-    
-    
-    while(mysticWell != nullptr) {
-        if(isSameName(mysticWell->value, newName->value)) {
-            if(mysticWell->root == nullptr) {
-                mysticWell->root = newName;
-                return ;
+    newName->left = NULL;
+    newName->right = NULL;
+
+    Target* t = mysticWell;
+    string lname = toLowercase(name);
+
+    while(t != NULL) {
+        if(lname == t->value) {
+            if(t->root == NULL) {
+                t->root = newName;
+                return;
             }
-            Name* currentName = mysticWell->root;
-            while (true) {
-                if (newName->value <= currentName->value) {
-                    if (currentName->left == nullptr) {
-                        currentName->left = newName;
+            Name* current = t->root;
+            while(true) {
+                if(name <= current->value) {
+                    if(current->right == NULL) {
+                        current->right = newName;
                         return;
                     }
-                    currentName = currentName->left;
+                    current = current->right;
                 } else {
-                    if (currentName->right == nullptr) {
-                        currentName->right = newName;
+                    if(current->left == NULL) {
+                        current->left = newName;
                         return;
                     }
-                    currentName = currentName->right;
+                    current = current->left;
                 }
             }
         }
-        if(mysticWell->value < toLowercase(newName->value)) {
-            mysticWell = mysticWell->right;
+        if(lname < t->value) {
+            t = t->left;
         } else {
-            mysticWell = mysticWell->left;
+            t = t->right;
         }
     }
+    delete newName;
 }
 
-
-void inOrderPrint(Name* name) {
-    if(name == nullptr) return;
-
-    inOrderPrint(name->left);
-    cout << name->value << " ";
-    inOrderPrint(name->right);
+void printName(Name* name, bool &first) {
+    if(name == NULL) return;
+    printName(name->right, first);
+    if (!first) cout << " ";
+    cout << name->value;
+    first = false;
+    printName(name->left, first);
 }
 
+void printTarget(Target* target) {
+    if(target == NULL) return;
+    printTarget(target->right);
 
-void targetTraversal(Target* target) {
-    if(target == nullptr) return;
-    
-    targetTraversal(target->right);
-    if (target->root != nullptr) {
-        inOrderPrint(target->root);
-        cout << "\n";
+    if(target->root) {
+        bool first = true;
+        printName(target->root, first);
     } else {
-        cout << "\"" << target->value << "\"" << " is not found!\n";
+        cout << "\"" << target->value << "\" is not found!";
     }
-    targetTraversal(target->left);
+    cout << "\n";
+
+    printTarget(target->left);
 }
 
 int main() {
-    Target* mysticWell = nullptr;
-    string targetLine;
-    getline(cin, targetLine);
+    Target* mysticWell = NULL;
+    string firstLine;
+    getline(cin, firstLine);
 
-    if (targetLine.empty()) {
-        cout << "IMPOSSIBLE\n";
-        return 0;
-    }
-
-    stringstream ss(targetLine);
-    string token;
-    while (ss >> token) {
-        createTarget(token, &mysticWell); 
-    }
-
-    string nameInput;
-    while(getline(cin, nameInput)) { 
-        if(nameInput.empty()) continue;
-        createName(nameInput, mysticWell); 
-    }
-
-    Target* t = mysticWell;
-
-
-    if (mysticWell == nullptr) {
+    if(firstLine.empty()) {
         cout << "IMPOSSIBLE\n";
     } else {
-        targetTraversal(mysticWell); 
+        stringstream ss(firstLine);
+        string target;
+        while(ss >> target) {
+            createTarget(target, &mysticWell);
+        }
+
+        string nameLine, name;
+        while(getline(cin, nameLine)) {
+            stringstream ss(nameLine);
+            if (ss >> name)
+                createName(name, mysticWell);
+        }
+
+        printTarget(mysticWell);
     }
-
-
     return 0;
 }
